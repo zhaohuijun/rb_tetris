@@ -18,6 +18,8 @@ const two = new Two({
   fullscreen: false
 });
 
+let rb_show_all = true;
+
 onMounted(() => {
   console.log('onMounted');
   if (!CenterDom.value) {
@@ -239,6 +241,10 @@ function onKeydown(e: KeyboardEvent) {
     case 'f':
       document.getElementById('app')?.requestFullscreen();
       break;
+    case 'l':
+      rb_show_all = !rb_show_all;
+      dirty.dirty('color');
+      break;
   }
 }
 
@@ -398,7 +404,7 @@ function updateBorder(isBlue: boolean): Group {
   const g = new Two.Group();
   // 上
   for (let i = 0; i < width + 2; i++) {
-    if ((i % 2 == 0) == isBlue) {
+    if (!rb_show_all && (i % 2 == 0) == isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (i + 0.5), boxSize * 0.5, boxSize, boxSize);
@@ -406,7 +412,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 左
   for (let i = 0; i < height; i++) {
-    if ((i % 2 == 0) != isBlue) {
+    if (!rb_show_all && (i % 2 == 0) != isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * 0.5, boxSize * (i + 1.5), boxSize, boxSize);
@@ -414,7 +420,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 右
   for (let i = 0; i < height; i++) {
-    if ((i % 2 == 0) == isBlue) {
+    if (!rb_show_all && (i % 2 == 0) == isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (width + 1.5), boxSize * (i + 1.5), boxSize, boxSize);
@@ -422,7 +428,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 下
   for (let i = 0; i < width + 2; i++) {
-    if ((i % 2 == 0) != isBlue) {
+    if (!rb_show_all && (i % 2 == 0) != isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (i + 0.5), boxSize * (height + 1.5), boxSize, boxSize);
@@ -466,12 +472,12 @@ function updateBackground(isBlue: boolean): Group {
       let bdraw = false;
       switch (c) {
         case 'b':
-          if (isBlue) {
+          if (rb_show_all || isBlue) {
             bdraw = true;
           }
           break;
         case 'r':
-          if (!isBlue) {
+          if (rb_show_all || !isBlue) {
             bdraw = true;
           }
           break;
@@ -538,12 +544,12 @@ function updateBlink(isBlue: boolean): Group {
       let bdraw = false;
       switch (c) {
         case 'b':
-          if (isBlue) {
+          if (rb_show_all || isBlue) {
             bdraw = true;
           }
           break;
         case 'r':
-          if (!isBlue) {
+          if (rb_show_all || !isBlue) {
             bdraw = true;
           }
           break;
@@ -574,12 +580,12 @@ function updateBlock(isBlue: boolean): Group {
       let bdraw = false;
       switch (color) {
         case 'b':
-          if (isBlue) {
+          if (rb_show_all || isBlue) {
             bdraw = true;
           }
           break;
         case 'r':
-          if (!isBlue) {
+          if (rb_show_all || !isBlue) {
             bdraw = true;
           }
           break;
