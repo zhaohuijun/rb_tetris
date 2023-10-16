@@ -5,11 +5,13 @@ import { Group } from "two.js/src/group";
 
 import { Dirty } from './dirty';
 
-const bgTheme = ref('light');
+const bgTheme = ref('dark');
 
 const dirty = new Dirty();
 
 const CenterDom = ref<HTMLElement | null>(null);
+
+const showHelp = ref(false);
 
 const two = new Two({
   type: Two.Types.canvas,
@@ -41,14 +43,16 @@ function onResize() {
   dirty.dirty('size');
 }
 
+const BLINK_TIME = 300; // ms
+const BLINK_COUNT = 6;
+
 let pause = false;
 let blink = false;
-let blinkTime = 500; // ms
 let gameOver = false;
 
 // 方框背景大小
 let width = 10;
-let height = 20;
+let height = 24;
 const boxSize = 10;
 
 let score = 0;
@@ -94,6 +98,10 @@ function newBlock(): BlockState {
     height: height,
     left: Math.floor(width / 2 - t[0].length / 2),
   }
+  count += 1;
+  if (count % 10 == 0) {
+    speed /= 1.01;
+  }
   return b;
 }
 
@@ -114,12 +122,19 @@ function init() {
   background = newBackground();
   backgroundBlink = newBackground();
   blockState = newBlock();
+  const ms = localStorage.getItem('maxScore');
+  if (ms) {
+    maxScore = Number(ms);
+  }
 }
 
 function onKeydown(e: KeyboardEvent) {
   // console.log('key:', e.key);
   switch (e.key) {
     case 'ArrowUp':
+      if (pause || gameOver || blink) {
+        break;
+      }
       if (blockState) {
         blockState.dir += 1;
         if (blockState.dir >= blockState.type.length) {
@@ -130,6 +145,9 @@ function onKeydown(e: KeyboardEvent) {
       dirty.dirty('block');
       break;
     case 'ArrowDown':
+      if (pause || gameOver || blink) {
+        break;
+      }
       if (blockState) {
         blockState.height -= 1;
       }
@@ -137,6 +155,9 @@ function onKeydown(e: KeyboardEvent) {
       dirty.dirty('block');
       break;
     case 'ArrowLeft':
+      if (pause || gameOver || blink) {
+        break;
+      }
       if (blockState) {
         blockState.left -= 1;
       }
@@ -144,6 +165,9 @@ function onKeydown(e: KeyboardEvent) {
       dirty.dirty('block');
       break;
     case 'ArrowRight':
+      if (pause || gameOver || blink) {
+        break;
+      }
       if (blockState) {
         blockState.left += 1;
       }
@@ -153,6 +177,7 @@ function onKeydown(e: KeyboardEvent) {
     case ' ':
       // 暂停
       pause = !pause;
+      dirty.dirty('pause');
       break;
     case 'r':
       // 重新开始
@@ -161,6 +186,7 @@ function onKeydown(e: KeyboardEvent) {
         blockState = newBlock();
         gameOver = false;
         score = 0;
+        dirty.dirty('restart');
       }
       break;
     case 'c':
@@ -193,7 +219,9 @@ function onKeydown(e: KeyboardEvent) {
       dirty.dirty('diff');
       break;
     case 'h':
+    case '?':
       // 帮助页面
+      onHelp();
       break;
     case '-':
       // 缩小
@@ -279,15 +307,34 @@ function check(action: string) {
           gameOver = true;
         }
         // 消行
-        // todo:
-
+        const fullLines: number[] = [];
+        for (let i = 0; i < height; i++) {
+          const l = background[i];
+          let count = 0;
+          for (let j = 0; j < width; j++) {
+            if (l[j] != 'n') {
+              count += 1;
+            }
+          }
+          if (count == width) {
+            fullLines.push(i);
+          }
+        }
+        if (fullLines.length > 0) {
+          score += fullLines.length * fullLines.length;
+          if (score > maxScore) {
+            maxScore = score;
+            localStorage.setItem('maxScore', String(maxScore));
+          }
+          beginBlink(fullLines);
+        }
         // 创建新块
         blockState = newBlock();
       }
       break;
     case 'left':
       if (overed) {
-        blockState.left = 0;
+        blockState.left += 1;
       }
       break;
     case 'right':
@@ -309,7 +356,7 @@ function next() {
 }
 
 // 缩放
-let scale = 4;
+let scale = 5;
 
 // 偏移
 let diff = 0;
@@ -324,7 +371,15 @@ function timer() {
   }
   if (blink) {
     // 消行时，闪烁
-    // todo:
+    const now = Number(new Date());
+    if (now - blinkChangeTime > BLINK_TIME) {
+      dirty.dirty('blink');
+      blinkChangeTime = now;
+      blinkStep += 1;
+      if (blinkStep >= BLINK_COUNT) {
+        endBlink();
+      }
+    }
     return;
   }
   const now = Number(new Date());
@@ -430,9 +485,75 @@ function updateBackground(isBlue: boolean): Group {
   return g;
 }
 
+let blinkStep = 0;
+let blinkChangeTime = 0;
+let blinkLines: number[] = [];
+
+function beginBlink(fullLines: number[]) {
+  blinkLines = fullLines;
+  blink = true;
+  blinkStep = 0;
+  blinkChangeTime = Number(new Date());
+  backgroundBlink = newBackground();
+  for (const i of fullLines) {
+    for (let j = 0; j < width; j++) {
+      backgroundBlink[i][j] = background[i][j];
+      background[i][j] = 'n';
+    }
+  }
+  dirty.dirty('blink');
+}
+
+function endBlink() {
+  blink = false;
+  blinkLines.reverse();
+  for (const i of blinkLines) {
+    background.splice(i, 1);
+  }
+  for (let i = 0; i < blinkLines.length; i++) {
+    const l: string[] = [];
+    for (let j = 0; j < width; j++) {
+      l.push('n');
+    }
+    background.push(l);
+  }
+}
+
 // 闪烁，消行时
 function updateBlink(isBlue: boolean): Group {
   const g = new Two.Group();
+  if (!blink) {
+    return g;
+  }
+  
+  if (blinkStep % 2 == 0) {
+    return g;
+  }
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      const c = backgroundBlink[i][j];
+      let bdraw = false;
+      switch (c) {
+        case 'b':
+          if (isBlue) {
+            bdraw = true;
+          }
+          break;
+        case 'r':
+          if (!isBlue) {
+            bdraw = true;
+          }
+          break;
+      }
+      if (bdraw) {
+        const b = new Two.Rectangle(
+          boxSize * (j + 1.5), 
+          boxSize * (height - i + 0.5), 
+          boxSize-2, boxSize-2);
+        g.add(b);
+      }
+    }
+  }
   return g;
 }
 
@@ -536,9 +657,14 @@ function updateMessage(): Group {
   if (gameOver) {
     const t = new Two.Text('GAME OVER', two.width / 2, boxSize * height * scale / 4, { size: 30 });
     g.add(t);
+  } else if (pause) {
+    const t = new Two.Text('暂停', two.width / 2, boxSize * height * scale / 4, { size: 30 });
+    g.add(t);
   }
-  const s = new Two.Text(`${score}`, two.width - 20, 50, { size: 20, alignment: 'right' });
+  const s = new Two.Text(`分数: ${score}`, two.width - 20, 50, { size: 20, alignment: 'right' });
   g.add(s);
+  const hs = new Two.Text(`最高分数: ${maxScore}`, two.width - 20, 80, { size: 20, alignment: 'right' });
+  g.add(hs);
   g.noStroke();
   if (bgTheme.value == 'dark') {
     g.fill = '#fff';
@@ -576,11 +702,43 @@ function update() {
   dirty.clean();
 }
 
+function onHelp() {
+  if (showHelp.value) {
+    pause = false;
+    showHelp.value = false;
+  } else {
+    pause = true;
+    showHelp.value = true;
+  }
+}
+
 </script>
 
 <template>
   <div :class="'wrapper' + ' ' + bgTheme">
     <div class="center" ref="CenterDom"></div>
+    <div :class="'btn-help' + ' ' + bgTheme" @click="onHelp">帮助</div>
+    <div class="help" v-if="showHelp">
+      <div class="dialog">
+        <div class="btn-close" @click="onHelp">x</div>
+        <div class="table">
+          <table>
+            <tr class="header"><th class="col-btn">按键</th><th class="col-feature">功能</th></tr>
+            <tr><td>上</td><td>旋转</td></tr>
+            <tr><td>下</td><td>下降一格</td></tr>
+            <tr><td>左、右</td><td>左右移动</td></tr>
+            <tr><td>空格</td><td>暂停</td></tr>
+            <tr><td>r</td><td>重新开始一局</td></tr>
+            <tr><td>c</td><td>改变背景颜色</td></tr>
+            <tr><td>z、x</td><td>左右分开</td></tr>
+            <tr><td>a、s</td><td>左右分开（细调）</td></tr>
+            <tr><td>-</td><td>缩小</td></tr>
+            <tr><td>=</td><td>放大</td></tr>
+            <tr><td>h、?</td><td>显示帮助页面</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -597,6 +755,60 @@ function update() {
   .center {
     width: 100%;
     height: 100%;
+  }
+  .btn-help {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    font-size: 30px;
+    cursor: pointer;
+    &.dark {
+      color: #030;
+    }
+    &.light {
+      color: #fcf;
+    }
+  }
+  .help {
+    position: absolute;
+    background-color: #fff;
+    border-radius: 10px;
+    border: solid 1px #000;
+    top: 50px;
+    left: 50vw;
+    margin-left: -200px;
+    width: 400px;
+  }
+  .dialog {
+    position: relative;
+    font-size: 20px;
+    .table {
+      padding-top: 30px;
+      padding-left: 6px;
+      .col-btn {
+        width: 80px;
+      }
+      .col-feature {
+        width: 300px;
+      }
+      td {
+        text-align: center;
+      }
+      tr:nth-child(odd) {
+        background-color: #eee;
+      }
+      tr.header {
+        background-color: #ccc;
+      }
+    }
+  }
+  .btn-close {
+    font-size: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    font-weight: 600;
   }
 }
 </style>
