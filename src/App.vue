@@ -236,6 +236,9 @@ function onKeydown(e: KeyboardEvent) {
       scale += 1;
       dirty.dirty('scale');
       break;
+    case 'f':
+      document.getElementById('app')?.requestFullscreen();
+      break;
   }
 }
 
@@ -734,6 +737,7 @@ function onHelp() {
             <tr><td>a、s</td><td>左右分开（细调）</td></tr>
             <tr><td>-</td><td>缩小</td></tr>
             <tr><td>=</td><td>放大</td></tr>
+            <tr><td>f</td><td>进入全屏</td></tr>
             <tr><td>h、?</td><td>显示帮助页面</td></tr>
           </table>
         </div>
