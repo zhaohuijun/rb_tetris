@@ -601,6 +601,19 @@ function updateBlock(isBlue: boolean): Group {
   return g;
 }
 
+// 双眼都能看到的
+function updateCenterMessage(): Group {
+  const g = new Two.Group();
+  if (gameOver) {
+    const t = new Two.Text('GAME OVER', boxSize * (width / 2 + 1), boxSize * (height / 2), { size: 15 });
+    g.add(t);
+  } else if (pause) {
+    const t = new Two.Text('暂停', boxSize * (width / 2 + 1), boxSize * (height / 2), { size: 20 });
+    g.add(t);
+  }
+  return g;
+}
+
 // 蓝色眼镜看到的
 function updateBlue(): Group {
   const g = new Two.Group();
@@ -608,6 +621,7 @@ function updateBlue(): Group {
   g.add(updateBackground(true));
   g.add(updateBlink(true));
   g.add(updateBlock(true));
+  g.add(updateCenterMessage());
   g.noStroke();
   if (bgTheme.value == 'dark') {
     g.fill = '#00f';
@@ -626,6 +640,7 @@ function updateRed(): Group {
   g.add(updateBackground(false));
   g.add(updateBlink(false));
   g.add(updateBlock(false));
+  g.add(updateCenterMessage());
   g.noStroke();
   if (bgTheme.value == 'dark') {
     g.fill = '#c00';
@@ -657,13 +672,6 @@ function updateInfo(): Group {
 // 双眼都能看到的
 function updateMessage(): Group {
   const g = new Two.Group();
-  if (gameOver) {
-    const t = new Two.Text('GAME OVER', two.width / 2, boxSize * height * scale / 4, { size: 30 });
-    g.add(t);
-  } else if (pause) {
-    const t = new Two.Text('暂停', two.width / 2, boxSize * height * scale / 4, { size: 30 });
-    g.add(t);
-  }
   const s = new Two.Text(`分数: ${score}`, two.width - 20, 50, { size: 20, alignment: 'right' });
   g.add(s);
   const hs = new Two.Text(`最高分数: ${maxScore}`, two.width - 20, 80, { size: 20, alignment: 'right' });
