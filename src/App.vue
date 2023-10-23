@@ -18,7 +18,7 @@ const two = new Two({
   fullscreen: false
 });
 
-let rb_show_all = true;
+let rb_show_all = false;
 
 onMounted(() => {
   console.log('onMounted');
