@@ -20,6 +20,8 @@ const two = new Two({
 
 let rb_show_all = false;
 
+let border_show_all = true;
+
 onMounted(() => {
   console.log('onMounted');
   if (!CenterDom.value) {
@@ -67,13 +69,13 @@ type BlockType = string[][][];
 
 // 全部的类型
 const blockTypes: BlockType[] = [
-  [[['b'], ['r'], ['b'], ['r']], [['b', 'r', 'b', 'r']]],
-  [[['b', 'r'], ['r'], ['b']], [['r'], ['b', 'r', 'b']], [['n', 'b'], ['n', 'r'], ['r', 'b']], [['b', 'r', 'b'], ['n', 'n', 'r']]],
-  [[['b'], ['r'], ['b', 'r']], [['n', 'n', 'r'], ['b', 'r', 'b']], [['r', 'b'], ['n', 'r'], ['n', 'b']], [['b', 'r', 'b'], ['r']]],
-  [[['b'], ['r', 'b'], ['b']], [['n', 'b'], ['b', 'r', 'b']], [['n', 'b'], ['b', 'r'], ['n', 'b']], [['b', 'r', 'b'], ['n', 'b']]],
-  [[['b'], ['r', 'b'], ['n', 'r']], [['n', 'b', 'r'], ['b', 'r']]],
+  [[['b'], ['r'], ['b'], ['r']], [['b', 'r', 'b', 'r']]], // 长条
+  [[['b', 'r'], ['r'], ['b']], [['r'], ['b', 'r', 'b']], [['n', 'b'], ['n', 'r'], ['r', 'b']], [['b', 'r', 'b'], ['n', 'n', 'r']]], // 拐
+  [[['b'], ['r'], ['b', 'r']], [['n', 'n', 'r'], ['b', 'r', 'b']], [['r', 'b'], ['n', 'r'], ['n', 'b']], [['b', 'r', 'b'], ['r']]], // 
+  [[['b'], ['r', 'b'], ['b']], [['n', 'b'], ['b', 'r', 'b']], [['n', 'b'], ['b', 'r'], ['n', 'b']], [['b', 'r', 'b'], ['n', 'b']]], // 三角
+  [[['b'], ['r', 'b'], ['n', 'r']], [['n', 'b', 'r'], ['b', 'r']]], // 二拐
   [[['n', 'r'], ['r', 'b'], ['b']], [['b', 'r'], ['n', 'b', 'r']]],
-  [[['b', 'r'], ['r', 'b']]],
+  [[['b', 'r'], ['r', 'b']]], // 方框
 ];
 
 // 背景，n表示空，b蓝色，r红色
@@ -245,6 +247,10 @@ function onKeydown(e: KeyboardEvent) {
       rb_show_all = !rb_show_all;
       dirty.dirty('color');
       break;
+    case 'k':
+      border_show_all = !border_show_all;
+      dirty.dirty('color');
+      break;
   }
 }
 
@@ -404,7 +410,7 @@ function updateBorder(isBlue: boolean): Group {
   const g = new Two.Group();
   // 上
   for (let i = 0; i < width + 2; i++) {
-    if (!rb_show_all && (i % 2 == 0) == isBlue) {
+    if (!rb_show_all && !border_show_all && (i % 2 == 0) == isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (i + 0.5), boxSize * 0.5, boxSize, boxSize);
@@ -412,7 +418,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 左
   for (let i = 0; i < height; i++) {
-    if (!rb_show_all && (i % 2 == 0) != isBlue) {
+    if (!rb_show_all && !border_show_all && (i % 2 == 0) != isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * 0.5, boxSize * (i + 1.5), boxSize, boxSize);
@@ -420,7 +426,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 右
   for (let i = 0; i < height; i++) {
-    if (!rb_show_all && (i % 2 == 0) == isBlue) {
+    if (!rb_show_all && !border_show_all && (i % 2 == 0) == isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (width + 1.5), boxSize * (i + 1.5), boxSize, boxSize);
@@ -428,7 +434,7 @@ function updateBorder(isBlue: boolean): Group {
   }
   // 下
   for (let i = 0; i < width + 2; i++) {
-    if (!rb_show_all && (i % 2 == 0) != isBlue) {
+    if (!rb_show_all && !border_show_all && (i % 2 == 0) != isBlue) {
       continue;
     }
     const b = new Two.Rectangle(boxSize * (i + 0.5), boxSize * (height + 1.5), boxSize, boxSize);
